@@ -1,17 +1,27 @@
 "use client";
 
-import { 
-  BarChart, 
-  Bar, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from "recharts";
 
-const data = [
+interface IncomeExpenseData {
+  month: string;
+  income: number;
+  expense: number;
+}
+
+interface IncomeExpenseChartProps {
+  data?: IncomeExpenseData[];
+}
+
+const defaultData: IncomeExpenseData[] = [
   { month: "Oct", income: 4200, expense: 3100 },
   { month: "Nov", income: 4500, expense: 3400 },
   { month: "Dec", income: 5200, expense: 3800 },
@@ -20,7 +30,7 @@ const data = [
   { month: "Mar", income: 4600, expense: 3500 },
 ];
 
-export function IncomeExpenseChart() {
+export function IncomeExpenseChart({ data = defaultData }: IncomeExpenseChartProps) {
   return (
     <div className="h-[250px] w-full">
       <ResponsiveContainer width="100%" height="100%">

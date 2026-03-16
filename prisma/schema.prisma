@@ -16,6 +16,8 @@ model User {
   categories Category[]
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([email])
 }
 
 model Account {
@@ -32,6 +34,9 @@ model Account {
   transactions  Transaction[]
   createdAt     DateTime      @default(now())
   updatedAt     DateTime      @updatedAt
+
+  @@index([userId])
+  @@index([userId, type])
 }
 
 model Transaction {
@@ -48,6 +53,11 @@ model Transaction {
   isRecurring Boolean  @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  @@index([accountId])
+  @@index([date])
+  @@index([categoryId])
+  @@index([accountId, date])
 }
 
 model Category {
@@ -63,6 +73,8 @@ model Category {
   transactions Transaction[]
   budgets      BudgetItem[]
   createdAt    DateTime      @default(now())
+
+  @@index([userId])
 }
 
 model BudgetItem {

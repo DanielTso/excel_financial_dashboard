@@ -2,6 +2,7 @@ import NextAuth from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import prisma from "@/lib/db";
 import { z } from "zod";
+import bcrypt from "bcryptjs";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [
@@ -21,9 +22,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
 
           if (!user) return null;
-          
-          // Simplified password check for prototype
-          if (user.password === password) {
+
+          // Secure password comparison using bcrypt
+          const isValidPassword = await bcrypt.compare(password, user.password);
+
+          if (isValidPassword) {
             return {
               id: user.id,
               name: user.name,

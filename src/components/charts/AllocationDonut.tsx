@@ -1,13 +1,20 @@
 "use client";
 
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
 } from "recharts";
+
+interface LegendEntry {
+  payload?: {
+    percent?: number;
+  };
+  value?: string;
+}
 
 const CHART_COLORS = [
   "#2B6CB0", // steel-blue
@@ -59,10 +66,12 @@ export function AllocationDonut({ data }: AllocationDonutProps) {
             verticalAlign="bottom"
             iconType="circle"
             iconSize={8}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value, entry: any) => (
+            formatter={(value, entry: LegendEntry) => (
               <span className="text-[12px] font-medium text-foreground">
-                {value} {entry?.payload?.percent ? `(${entry.payload.percent.toFixed(1)}%)` : ''}
+                {value}{" "}
+                {entry?.payload?.percent
+                  ? `(${entry.payload.percent.toFixed(1)}%)`
+                  : ""}
               </span>
             )}
             wrapperStyle={{ 

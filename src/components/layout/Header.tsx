@@ -18,7 +18,10 @@ export function Header() {
       </div>
       
       <div className="flex items-center gap-4">
-        <button className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-sand/20">
+        <button
+          aria-label="Notifications"
+          className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-full hover:bg-sand/20"
+        >
           <Bell size={20} />
         </button>
         <div className="flex items-center gap-3 pl-4 border-l border-border h-8">
@@ -29,9 +32,10 @@ export function Header() {
           >
             DT
           </button>
-          <button 
+          <button
             onClick={() => signOut()}
             className="text-muted-foreground hover:text-negative transition-colors"
+            aria-label="Sign Out"
             title="Sign Out"
           >
             <LogOut size={16} />

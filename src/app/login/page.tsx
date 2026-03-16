@@ -58,24 +58,32 @@ export default function LoginPage() {
                 type="email"
                 placeholder="daniel@example.com"
                 required
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "email-error" : undefined}
                 className="h-10 border-border focus-visible:ring-steel-blue"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password" throws-error="text-[13px] font-semibold text-muted-foreground">Password</Label>
+              <Label htmlFor="password" className="text-[13px] font-semibold text-muted-foreground">Password</Label>
               <Input
                 id="password"
                 type="password"
                 required
+                aria-invalid={error ? "true" : "false"}
+                aria-describedby={error ? "password-error" : undefined}
                 className="h-10 border-border focus-visible:ring-steel-blue"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
             </div>
             {error && (
-              <div className="text-negative text-[12px] font-bold bg-negative-bg px-3 py-2 rounded-sm border border-negative/10">
+              <div
+                id="form-error"
+                role="alert"
+                className="text-negative text-[12px] font-bold bg-negative-bg px-3 py-2 rounded-sm border border-negative/10"
+              >
                 {error}
               </div>
             )}

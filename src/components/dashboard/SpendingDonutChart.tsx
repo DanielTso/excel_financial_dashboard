@@ -1,26 +1,44 @@
 "use client";
 
-import { 
-  PieChart, 
-  Pie, 
-  Cell, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  Tooltip,
+  ResponsiveContainer,
+  Legend,
+  type LegendProps,
 } from "recharts";
 
-const data = [
-  { name: "Housing", value: 1800.00, color: "#2B6CB0" },
-  { name: "Food & Dining", value: 620.00, color: "#2D7D46" },
-  { name: "Transportation", value: 435.00, color: "#B7791F" },
-  { name: "Utilities", value: 340.00, color: "#C53030" },
-  { name: "Entertainment", value: 210.00, color: "#6B46C1" },
-  { name: "Other", value: 250.00, color: "#5C5C5C" },
+interface ChartData {
+  name: string;
+  value: number;
+  color: string;
+}
+
+interface LegendEntry {
+  payload?: {
+    value?: number;
+  };
+}
+
+interface SpendingDonutChartProps {
+  data?: ChartData[];
+}
+
+const defaultData: ChartData[] = [
+  { name: "Housing", value: 1800.0, color: "#2B6CB0" },
+  { name: "Food & Dining", value: 620.0, color: "#2D7D46" },
+  { name: "Transportation", value: 435.0, color: "#B7791F" },
+  { name: "Utilities", value: 340.0, color: "#C53030" },
+  { name: "Entertainment", value: 210.0, color: "#6B46C1" },
+  { name: "Other", value: 250.0, color: "#5C5C5C" },
 ];
 
-const total = data.reduce((sum, item) => sum + item.value, 0);
-
-export function SpendingDonutChart() {
+export function SpendingDonutChart({
+  data = defaultData,
+}: SpendingDonutChartProps) {
+  const total = data.reduce((sum, item) => sum + item.value, 0);
   return (
     <div className="h-[250px] w-full flex items-center justify-center">
       <ResponsiveContainer width="100%" height="100%">
@@ -55,11 +73,12 @@ export function SpendingDonutChart() {
             verticalAlign="middle"
             iconType="square"
             iconSize={10}
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            formatter={(value, entry: any) => (
+            formatter={(value, entry: LegendEntry & { value?: string }) => (
               <span className="flex items-baseline justify-between gap-8 min-w-[150px]">
                 <span className="text-[13px] font-medium text-foreground">{value as string}</span>
-                <span className="text-[12px] font-mono text-muted-foreground">${entry?.payload?.value ? entry.payload.value.toLocaleString(undefined, {minimumFractionDigits: 2}) : '0.00'}</span>
+                <span className="text-[12px] font-mono text-muted-foreground">
+                  ${entry?.payload?.value ? entry.payload.value.toLocaleString(undefined, { minimumFractionDigits: 2 }) : "0.00"}
+                </span>
               </span>
             )}
             wrapperStyle={{ 

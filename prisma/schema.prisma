@@ -1,0 +1,94 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String?
+  password  String
+  accounts  Account[]
+  categories Category[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Account {
+  id            String        @id @default(cuid())
+  userId        String
+  user          User          @relation(fields: [userId], references: [id])
+  name          String        // "Chase Checking", "Amex Platinum"
+  type          String        // CHECKING, SAVINGS, CREDIT_CARD, LOAN, INVESTMENT, ASSET (SQLite doesn't support enums)
+  institution   String?       // "Chase", "American Express"
+  currentBalance Float        @default(0) // SQLite doesn't support Decimal
+  currency      String        @default("USD")
+  isActive      Boolean       @default(true)
+  sortOrder     Int           @default(0)
+  transactions  Transaction[]
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  accountId   String
+  account     Account  @relation(fields: [accountId], references: [id])
+  date        DateTime
+  payee       String
+  categoryId  String?
+  category    Category? @relation(fields: [categoryId], references: [id])
+  amount      Float    // Positive = income, Negative = expense
+  type        String   // INCOME, EXPENSE, TRANSFER
+  memo        String?
+  isRecurring Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Category {
+  id           String        @id @default(cuid())
+  userId       String
+  user         User          @relation(fields: [userId], references: [id])
+  name         String        // "Groceries", "Rent", "Salary"
+  group        String        // "Housing", "Food", "Transportation"
+  icon         String?       // Lucide icon name
+  color        String?       // Hex color for charts
+  isIncome     Boolean       @default(false)
+  sortOrder    Int           @default(0)
+  transactions Transaction[]
+  budgets      BudgetItem[]
+  createdAt    DateTime      @default(now())
+}
+
+model BudgetItem {
+  id         String   @id @default(cuid())
+  categoryId String
+  category   Category @relation(fields: [categoryId], references: [id])
+  month      Int      // 1-12
+  year       Int      // 2025, 2026, etc.
+  budgeted   Float    // Planned amount
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([categoryId, month, year])
+}
+
+model ScheduledTransaction {
+  id          String    @id @default(cuid())
+  accountId   String
+  payee       String
+  amount      Float
+  frequency   String    // WEEKLY, BIWEEKLY, MONTHLY, QUARTERLY, YEARLY
+  nextDueDate DateTime
+  categoryId  String?
+  type        String
+  memo        String?
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

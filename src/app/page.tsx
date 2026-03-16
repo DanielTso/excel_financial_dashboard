@@ -1,65 +1,137 @@
-import Image from "next/image";
+import prisma from "@/lib/db";
+import { auth } from "@/lib/auth";
+import { redirect } from "next/navigation";
+import { KpiCard } from "@/components/dashboard/KpiCard";
+import { IncomeExpenseChart } from "@/components/dashboard/IncomeExpenseChart";
+import { SpendingDonutChart } from "@/components/dashboard/SpendingDonutChart";
+import { NetWorthTrendChart } from "@/components/dashboard/NetWorthTrendChart";
+import { TransactionTable } from "@/components/transactions/TransactionTable";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ArrowRight, TrendingUp } from "lucide-react";
+import Link from "next/link";
 
-export default function Home() {
+export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user?.email) redirect("/login");
+
+  const user = await prisma.user.findUnique({
+    where: { email: session.user.email },
+  });
+
+  // Calculate real KPIs
+  const accounts = await prisma.account.findMany({ where: { userId: user!.id } });
+  const totalAssets = accounts.filter(a => a.currentBalance > 0).reduce((sum, a) => sum + a.currentBalance, 0);
+  const totalLiabilities = Math.abs(accounts.filter(a => a.currentBalance < 0).reduce((sum, a) => sum + a.currentBalance, 0));
+  const netWorthValue = totalAssets - totalLiabilities;
+
+  const currentMonthTransactions = await prisma.transaction.findMany({
+    where: {
+      account: { userId: user!.id },
+      date: {
+        gte: new Date(2026, 2, 1),
+        lt: new Date(2026, 3, 1),
+      }
+    },
+    include: {
+      category: true,
+      account: true
+    }
+  });
+
+  const income = currentMonthTransactions.filter(t => t.type === "INCOME").reduce((sum, t) => sum + t.amount, 0);
+  const expense = Math.abs(currentMonthTransactions.filter(t => t.type === "EXPENSE").reduce((sum, t) => sum + t.amount, 0));
+  const cashFlow = income - expense;
+
+  const recentTransactions = await prisma.transaction.findMany({
+    where: { account: { userId: user!.id } },
+    include: {
+      account: { select: { name: true } },
+      category: { select: { name: true, color: true } },
+    },
+    orderBy: { date: 'desc' },
+    take: 7,
+  });
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="p-8 space-y-8">
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-3xl font-display text-foreground">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">March 2026</p>
+      </div>
+
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <KpiCard 
+          label="Net Worth" 
+          value={`$${netWorthValue.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
+          delta={{ value: "+4.2%", isPositive: true, label: "this month" }}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+        <KpiCard 
+          label="Cash Flow" 
+          value={`$${cashFlow.toLocaleString(undefined, { maximumFractionDigits: 0 })}`} 
+          delta={{ value: cashFlow >= 0 ? "+$252" : "-$252", isPositive: cashFlow >= 0, label: "vs last month" }}
+        />
+        <KpiCard 
+          label="Budget Used" 
+          value="72%" 
+          delta={{ value: "72% of $4,200", isPositive: true }}
+        />
+        <KpiCard 
+          label="Bills Due (TD)" 
+          value="$1,340" 
+          delta={{ value: "3 upcoming", isPositive: false }}
+        />
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        <Card className="border-border shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[15px] font-semibold text-foreground uppercase tracking-tight">Income vs. Expenses</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <IncomeExpenseChart />
+          </CardContent>
+        </Card>
+        
+        <Card className="border-border shadow-card">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-[15px] font-semibold text-foreground uppercase tracking-tight">Top Spending Categories</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <SpendingDonutChart />
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Net Worth Trend Section */}
+      <Card className="border-border shadow-card">
+        <CardHeader className="flex flex-row items-center justify-between pb-2">
+          <CardTitle className="text-[15px] font-semibold text-foreground uppercase tracking-tight">Net Worth — 12 Month Trend</CardTitle>
+          <div className="flex items-center gap-1.5 px-2 py-1 rounded-sm bg-positive-bg text-positive text-[12px] font-bold">
+            <TrendingUp size={14} />
+            <span>+$32,420 (20.9%)</span>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <NetWorthTrendChart />
+        </CardContent>
+      </Card>
+
+      {/* Recent Transactions Table */}
+      <Card className="border-border shadow-card">
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="text-[15px] font-semibold text-foreground uppercase tracking-tight">Recent Transactions</CardTitle>
+          <Link href="/transactions">
+            <Button variant="outline" size="sm" className="h-8 gap-2 text-[12px] border-steel-blue text-steel-blue hover:bg-steel-blue/5">
+              View All <ArrowRight size={14} />
+            </Button>
+          </Link>
+        </CardHeader>
+        <CardContent>
+          <TransactionTable transactions={recentTransactions} />
+        </CardContent>
+      </Card>
     </div>
   );
 }

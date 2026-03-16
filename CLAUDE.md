@@ -28,11 +28,18 @@ npm run start
 # Linting
 npm run lint
 
+# Testing
+npm run test              # Run unit tests
+npm run test:coverage     # Run tests with coverage
+npm run test:e2e          # Run E2E tests with Playwright
+
 # Database commands (Prisma)
-npx prisma generate      # Generate Prisma client after schema changes
-npx prisma db push       # Push schema changes to database
-npx prisma studio        # Open Prisma Studio (database GUI)
-npx ts-node prisma/seed.ts  # Run seed script
+npx prisma generate       # Generate Prisma client after schema changes
+npx prisma db push        # Push schema changes to database
+npx prisma migrate dev    # Create migration
+npx prisma studio         # Open Prisma Studio (database GUI)
+npx ts-node prisma/seed.ts           # Run seed script
+npx ts-node prisma/migrate-passwords.ts  # Migrate plaintext passwords to bcrypt
 ```
 
 ## Architecture
@@ -73,10 +80,12 @@ src/components/
 
 1. **Server Components** (pages) fetch directly from Prisma using `auth()` from `@/lib/auth`
 2. **Auth**: `src/lib/auth.ts` configures NextAuth with Credentials provider
-   - Passwords are stored plaintext (prototype only)
+   - Passwords are hashed with bcrypt (cost factor 12)
    - Protected routes redirect to `/login` if not authenticated
+   - Rate limiting applied via `src/middleware.ts`
 3. **Client Components** (charts, tables) receive data via props
 4. **State Management**: Zustand for client state; server state via Prisma queries
+5. **Caching**: React `cache()` wrappers in `src/lib/cache.ts` for request-level deduplication
 
 ### Database Schema (Prisma)
 
@@ -202,6 +211,36 @@ Chart styling rules:
 - Axis labels in `Source Sans 3`, 12px, `--color-text-tertiary`
 - Tooltips: white bg, `shadow-card`, 8px radius
 
+## Testing
+
+### Unit Tests (Vitest)
+
+Test files use the pattern `*.test.ts` or `*.test.tsx`:
+
+```
+src/
+├── lib/
+│   ├── utils.test.ts       # cn() utility tests
+│   ├── formatters.test.ts  # Currency/date formatting tests
+│   └── auth.test.ts        # Auth logic tests
+└── components/
+    ├── ui/button.test.tsx
+    ├── dashboard/KpiCard.test.tsx
+    └── transactions/TransactionTable.test.tsx
+```
+
+Run tests: `npm run test`
+Run with coverage: `npm run test:coverage`
+
+### E2E Tests (Playwright)
+
+Configured in `playwright.config.ts`. Run with: `npm run test:e2e`
+
+### Test Utilities
+
+- `src/test/setup.ts` - Jest-DOM matchers and global mocks
+- Mocks for `next-auth`, `next/navigation`, `@/lib/db`
+
 ## Environment Setup
 
 Required environment variables (in `.env` or Railway dashboard):
@@ -213,7 +252,11 @@ AUTH_SECRET="your-secret-here"
 
 ## Notes
 
-- This is a **prototype/YOLO** codebase — passwords are plaintext, no tests exist
+- Passwords are hashed with bcrypt (cost factor 12)
+- 61+ tests covering utilities, components, and auth logic
+- Rate limiting: 5 login attempts per 15 minutes per IP
+- Security headers configured in `next.config.ts`
 - The `GEMINI.md` file contains detailed design guardrails — reference it for any UI work
 - Sidebar navigation items are defined in `src/components/layout/Sidebar.tsx`
 - All routes except `/login` are protected by NextAuth middleware (configured in `src/lib/auth.ts`)
+- Use `getCurrentUser()` from `@/lib/user` instead of duplicating auth checks

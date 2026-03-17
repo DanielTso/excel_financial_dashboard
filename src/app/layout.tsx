@@ -37,17 +37,12 @@ export default function RootLayout({
         className={`${dmSerifDisplay.variable} ${sourceSans3.variable} ${jetBrainsMono.variable} antialiased font-sans bg-background`}
       >
         <AuthProvider>
-          <div className="flex min-h-screen">
-            <Sidebar />
-            <div className="flex-1 ml-[220px]">
-              <Header />
-              <main className="mt-[56px] min-h-[calc(100vh-56px)]">
-                {children}
-              </main>
-            </div>
-          </div>
+          <LayoutContent>{children}</LayoutContent>
         </AuthProvider>
       </body>
     </html>
   );
 }
+
+// Separate client component to handle pathname-based layout
+import { LayoutContent } from "@/components/layout/LayoutContent";

@@ -29,7 +29,7 @@ test.describe("Authentication", () => {
     await page.getByRole("button", { name: /sign in/i }).click();
 
     // Check for error message
-    await expect(page.getByText("Invalid credentials")).toBeVisible();
+    await expect(page.getByText("Invalid credentials. Please try again.")).toBeVisible();
   });
 
   test("should redirect to login when accessing protected route", async ({

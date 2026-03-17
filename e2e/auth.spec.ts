@@ -4,8 +4,10 @@ test.describe("Authentication", () => {
   test("should display login page", async ({ page }) => {
     await page.goto("/login");
 
-    // Check page title and branding
-    await expect(page.getByText("Tso Finance")).toBeVisible();
+    // Check page title and branding (use role heading to be specific)
+    await expect(
+      page.getByRole("heading", { name: "Tso Finance", level: 1 })
+    ).toBeVisible();
     await expect(
       page.getByText("Your money. Your clarity. Your command.")
     ).toBeVisible();

@@ -9,7 +9,7 @@ jobs:
   deploy:
     name: Deploy to Railway
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    if: (github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')) && vars.RAILWAY_SERVICE != ''
 
     steps:
       - name: Checkout code
@@ -33,9 +33,11 @@ jobs:
           AUTH_SECRET: ${{ secrets.AUTH_SECRET }}
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
 
+      - name: Install Railway CLI
+        run: npm install -g @railway/cli
+
       - name: Deploy to Railway
-        uses: railway/cli-deploy@v1
-        if: env.RAILWAY_TOKEN != ''
+        run: railway up --service ${{ vars.RAILWAY_SERVICE }}
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
 
@@ -43,7 +45,6 @@ jobs:
     name: Create Release
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/v')
-    needs: deploy
 
     steps:
       - name: Checkout code
